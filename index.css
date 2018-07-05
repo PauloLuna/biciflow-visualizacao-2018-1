@@ -1,0 +1,21 @@
+body {
+    font-family: "Times New Roman", Georgia, Serif;
+}
+
+h1, h4, h5{
+    font-family: Arial, Helvetica, sans-serif;
+}
+
+.contato{
+    text-align: center;
+}
+
+.info{
+    width:150px; 
+    display: inline-block; 
+    margin-right: 40px;
+}
+
+.info>img {
+    border-radius: 50%;
+}
