@@ -65,9 +65,9 @@ function carregarAcidentes(){
     }).then(function(data){
         acidentes = data;
         acidentes.forEach(function(acidente){
-            var nome = fixInconsistencies(acidente.endereco)
+            acidentes.endereco = fixInconsistencies(acidente.endereco);
             index = geo_ruas.findIndex(function(logradouro){
-                return logradouro.properties.logradouro_nome === nome;
+                return logradouro.properties.logradouro_nome === acidente.endereco;
             });
             
             if(index != -1){
@@ -80,8 +80,12 @@ function carregarAcidentes(){
 
         });
         console.log("carregou");
+        iniciarCrossfilter();
+        console.log("crossfilter criado");
+        
     });
 }
+
 
 function carregarMonitoramento(){
     console.log("algo passou")
@@ -92,4 +96,7 @@ function carregarMonitoramento(){
     });
 }
 
+
+//dc.config.defaultColors(dc.config.newScheme);
 carregarMonitoramento();
+
