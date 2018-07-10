@@ -1,28 +1,21 @@
 var x_acidentes;
-var acidentesRua, acidentesDiaDaSemana, acidentesHoraDoDia, acidentesNatureza, acidentesDate;
-var acidentesCiclistaPorRua, acidentesPorNatureza, acidentesPorTime;
+var acidentesRua, acidentesNatureza, acidentesHoraDia;
+var acidentesPorRua, acidentesPorNatureza, acidentesPorHoraDia;
+var heatMap, pie, layerGroup = L.layerGroup();
+var days = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sab"]
 
 function iniciarCrossfilter(){
     x_acidentes = crossfilter(acidentes);
-    
     criarDimensoes();
+    x_acidentes.onChange(onAcidentesChange);
 }
 
 function criarDimensoes(){
     tp = d3.timeParse('%Y-%m-%d-%H:%M');
     acidentesRua = x_acidentes.dimension( d => d.endereco);
-    acidentesDiaDaSemana = x_acidentes.dimension(function(d){
-        dia =  tp(d.data+"-"+d.hora)
-        return dia ? dia.getDay() : 8;
-    });
-    acidentesHoraDoDia = x_acidentes.dimension(function(d){
-        dia =  tp(d.data+"-"+d.hora)
-        return dia ? dia.getHours() : 0;
-    });
     acidentesNatureza = x_acidentes.dimension( d => d.natureza);
-    acidentesDate = x_acidentes.dimension(function(d){
+    acidentesHoraDia = x_acidentes.dimension(function(d){
         dia =  tp(d.data+"-"+d.hora);
-        console.log(dia);
         dia = dia ? dia : tp('07-01-90-05:00');
         return [dia.getDay(), dia.getHours()];
     });
@@ -31,15 +24,9 @@ function criarDimensoes(){
 }
 
 function criarFiltros(){
-    acidentesCiclistaPorRua = acidentesRua.group().reduceSum(function(d){
-        if(parseInt(d.ciclista)){
-            return parseInt(d.ciclista);
-        } else {
-            return 0;
-        }
-    });
+    acidentesPorRua = acidentesRua.group().reduceSum(d => 1);
 
-    acidentesCiclistaPorTime = acidentesDate.group().reduceSum( d => 1);
+    acidentesPorHoraDia = acidentesHoraDia.group().reduceSum( d => 1);
 
     acidentesPorNatureza = acidentesNatureza.group().reduceSum( d => 1);
 
@@ -47,23 +34,52 @@ function criarFiltros(){
 }
 
 function criarGraficos(){
-    var top4 = dc.pieChart('#top4');
-    top4.radius(200).width(400).height(400).dimension(acidentesNatureza).group(acidentesPorNatureza);
-    var heatMap = dc.heatMap("#test");
+    pie = dc.pieChart('#top4');
+    pie.radius(100).width(350).height(250).cx(250).cy(100)
+        .dimension(acidentesNatureza)
+        .group(acidentesPorNatureza)
+        .legend(dc.legend());
+    heatMap = dc.heatMap("#test");
     heatMap
-    .width(45 * 20 + 80)
-    .height(45 * 5 + 40)
-    .dimension(acidentesDate)
-    .group(acidentesCiclistaPorTime)    
-    .keyAccessor(function(d) { return +d.key[1]; })
-    .valueAccessor(function(d) { return +d.key[0]; })
+    .width(20 * 24 + 80)
+    .height(20 * 7 + 40)
+    .dimension(acidentesHoraDia)
+    .group(acidentesPorHoraDia)    
+    .keyAccessor(function(d) { return + d.key[1]; })
+    .valueAccessor(function(d) { return + d.key[0]; })
     .colorAccessor(function(d) { return +d.value; })
     .title(function(d) {
-        return "Dia:   " + d.key[0] + "\n" +
+        return "Dia:   " + days[d.key[0]] + "\n" +
                "Hora:  " + d.key[1] + "\n" +
                "Acidentes: " + ( d.value) ;})
-    .colors(["#ffffd9","#edf8b1","#c7e9b4","#7fcdbb","#41b6c4","#1d91c0","#225ea8","#253494","#081d58"])
+    .colors(['#ffffcc','#ffeda0','#fed976','#feb24c','#fd8d3c','#fc4e2a','#e31a1c','#bd0026','#800026'])
     .calculateColorDomain();
 
+    
+
     dc.renderAll();
+    desenharMapa();
 }
+
+function onAcidentesChange(){
+    heatMap.calculateColorDomain();
+    desenharMapa();
+}
+
+function desenharMapa(){
+    var cs = heatMap.colors();
+
+    layerGroup.eachLayer( d=> mymap.removeLayer(d));
+    mymap.removeLayer(layerGroup);
+    layerGroup.clearLayers();
+    acidentesPorRua.all().forEach(function(d){
+        var tmp = dict_ruas[d.key];
+        if(tmp){
+            var feature = L.geoJSON(tmp.geometry, { style: {color: cs(d.value)}});
+            feature.bindPopup('<p>' + tmp.properties.logradouro_nome + '<br/> Acidentes: ' + d.value + '</p>');
+            layerGroup.addLayer(feature);
+        }        
+    });
+    layerGroup.addTo(mymap);
+}
+

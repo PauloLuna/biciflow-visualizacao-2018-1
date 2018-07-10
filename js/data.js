@@ -1,4 +1,4 @@
-var geo_ruas, acidentes, monitoramento;
+var geo_ruas, dict_ruas = {}, acidentes, monitoramento, mymap;
 
 function fixInconsistencies (text)
 {     
@@ -46,7 +46,7 @@ function carregarRuas(){
         geo_ruas = data.features;
         geo_ruas.forEach(function(rua){
             rua.properties.logradouro_nome = fixSpaces(rua.properties.logradouro_nome);
-            rua.properties.acidentes = 0;
+            dict_ruas[rua.properties.logradouro_nome] = rua;
             monitor = monitoramento.find(function(data){
                 return data.local === rua.properties.logradouro_nome;
             });
@@ -66,18 +66,6 @@ function carregarAcidentes(){
         acidentes = data;
         acidentes.forEach(function(acidente){
             acidentes.endereco = fixInconsistencies(acidente.endereco);
-            index = geo_ruas.findIndex(function(logradouro){
-                return logradouro.properties.logradouro_nome === acidente.endereco;
-            });
-            
-            if(index != -1){
-                acidente.idx_rua = index;
-                //console.log(index);
-                if(parseInt(acidente.ciclista)){
-                    geo_ruas[index].properties.acidentes += parseInt(acidente.ciclista);
-                }                
-            }
-
         });
         console.log("carregou");
         iniciarCrossfilter();
@@ -96,7 +84,16 @@ function carregarMonitoramento(){
     });
 }
 
-
+mymap = L.map('mapid').setView([ -8.143124147416117, -34.918079076096383 ], 13);
+  
+L.tileLayer('https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token=pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4NXVycTA2emYycXBndHRqcmZ3N3gifQ.rJcFIG214AriISLbB6B5aw', {
+    maxZoom: 18,
+    attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors, ' +
+    '<a href="https://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, ' +
+    'Imagery © <a href="https://www.mapbox.com/">Mapbox</a>',
+    id: 'mapbox.streets'
+}).addTo(mymap);
+  
 //dc.config.defaultColors(dc.config.newScheme);
 carregarMonitoramento();
 
