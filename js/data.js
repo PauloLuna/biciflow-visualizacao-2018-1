@@ -1,4 +1,4 @@
-var geo_ruas, dict_ruas = {}, acidentes, monitoramento, mymap;
+var geo_ruas, dict_ruas = {}, acidentes, monitoramento, mymap, fluxoVias;
 
 function fixInconsistencies (text)
 {     
@@ -48,7 +48,7 @@ function carregarRuas(){
             rua.properties.logradouro_nome = fixSpaces(rua.properties.logradouro_nome);
             dict_ruas[rua.properties.logradouro_nome] = rua;
             monitor = monitoramento.find(function(data){
-                return data.local === rua.properties.logradouro_nome;
+                return data.LOCAL === rua.properties.logradouro_nome;
             });
             if(monitor){
                 rua.properties.monitor = monitor.CODIGO;
@@ -80,6 +80,14 @@ function carregarMonitoramento(){
     d3.dsv(';',"data/vias-monitoramento.csv")
     .then(function(data){
         monitoramento = data;
+        carregarFluxo();        
+    });
+}
+
+function carregarFluxo(){
+    d3.dsv(';',"data/velociades-vias.csv")
+    .then(function(data){
+        fluxoVias = data;
         carregarRuas();        
     });
 }
