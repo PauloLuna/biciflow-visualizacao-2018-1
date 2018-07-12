@@ -2,7 +2,8 @@ var x_acidentes;
 var acidentesRua, acidentesNatureza, acidentesHoraDia, fluxoHoraDia, fluxoRua;
 var acidentesPorRua, acidentesPorNatureza, acidentesPorHoraDia, fluxoPorHoraDia;
 var heatMap, pie, fluxoHM, layerGroup = L.layerGroup();
-var days = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"]
+var days = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"];
+var manter_mapa = false;
 
 function iniciarCrossfilter(){
     x_acidentes = crossfilter(acidentes);
@@ -91,7 +92,11 @@ function criarGraficos(){
 
 function onAcidentesChange(){
     heatMap.calculateColorDomain();
-    desenharMapa();
+    if(manter_mapa){
+        manter_mapa = false;
+    } else {
+        desenharMapa();        
+    }
 }
 
 function desenharMapa(){
@@ -108,12 +113,15 @@ function desenharMapa(){
             .on({
                 popupopen: function(){
                     console.log(tmp.properties.logradouro_nome+" "+tmp.properties.monitor);
+                    manter_mapa = true;
+                    acidentesRua.filter(tmp.properties.logradouro_nome);
                     fluxoRua.filter(tmp.properties.monitor);
                     fluxoHM.calculateColorDomain();
                     dc.redrawAll();
                 },
                 popupclose: function(){
                     //console.log(tmp.properties.logradouro_nome+" "+tmp.properties.monitor);
+                    acidentesRua.filterAll();
                     fluxoRua.filterAll();
                     fluxoHM.calculateColorDomain();
                     dc.redrawAll();
